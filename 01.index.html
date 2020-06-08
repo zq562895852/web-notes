@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+
+</body>
+
+</html>
+<!-- <script src="./03.装饰器.js"></script> -->
+
+<script>
+    console.log(new Set([1, 2, 3]) & new Set([2, 3, 4]));
+
+    function compose(...funcs) {
+        if (funcs.length === 0) {
+            return arg => arg;
+        }
+
+        if (funcs.length === 1) {
+            return funcs[0];
+        }
+
+        return funcs.reduce((a, b) => (...args) => a(b(...args)));
+    }
+
+    let fn1 = function (x) {
+        return x + 10;
+    };
+    let fn2 = function (x) {
+        return x * 10;
+    };
+    let fn3 = function (x) {
+        return x / 10;
+    };
+
+    let res = compose(
+        fn1,
+        fn2,
+        fn3
+    )(2);
+    console.log(res)
+</script>
+<!-- <script src="./01-index.js"></script> -->
