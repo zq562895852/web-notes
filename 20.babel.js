@@ -155,4 +155,13 @@
 
 /**
  * 插件是顺序调用的，所以新的的插件（实验性的）放在前面，老的插件定义在后面，因为可能需要新的插件解析过老的插件才会识别
+ * presets 是从右执行
+ * babel 的配置有四种babel.config.js   .babelrc   .babelrc.js   最后一种是在package.json中配置如下：
+ * {
+    "name": "my-package",
+    "babel": {
+        "presets": [],
+        "plugins": []
+    }
+   }
  */

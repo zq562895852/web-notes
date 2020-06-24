@@ -7,10 +7,56 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
     <script src="https://cdn.bootcdn.net/ajax/libs/d3/5.16.0/d3.min.js"></script>
+    <style>
+        #contanier {
+            width: 500px;
+            height: 250px;
+        }
+
+        path {
+            fill: none;
+            stroke: #4682B4;
+            stroke-width: 2;
+        }
+    </style>
 </head>
 
 <body>
+    <div id="contanier">
+
+    </div>
 
 </body>
 
 </html>
+<script>
+    // 定义画布的宽高   计算出来g元素的宽高
+    const width = 500,
+        height = 250,
+        margin = {
+            left: 50,
+            top: 30,
+            right: 30,
+            bottom: 20
+        },
+        g_width = width - margin.left - margin.right,
+        g_height = height - margin.top - margin.bottom
+
+
+
+    const svg = d3.select('#contanier').append('svg').attr('width', width).attr('height', height)
+    const g = d3.select('svg').append('g').attr('transform', `translate(${margin.left},${margin.top})`)
+    const data = [1, 4, 7, 3, 90]
+    // 定义缩放，线性缩放  domain输入的返回,range输出的返回，有点像映射的意思
+    const scale_x = d3.scaleLinear().domain([0, data.length - 1]).range([0, g_width])
+    const scale_y = d3.scaleLinear().domain([0, d3.max(data)]).range([0, g_height])
+
+
+
+    // 折现，回调参数，d传入进来的每个值，i就是数组的下标   d3.svg 在版本4.0以上已经改为 d3.line   curve(d3.curveBasis)曲线生成器
+    const line_generator = d3.line().x((d, i) => {
+        return scale_x(i);
+    }).y(d => scale_y(d)).curve(d3.curveBasis)
+    // d = "M1,0L20,40L40,50L100,100L0,200" M起点位置(1,0)       L代表线段  "M(1,0)L(20,40)L(40,50)L(100,100)L(0,200)"  L(20,40)画一个线到(20,40)这个坐标点
+    d3.select('g').append('path').attr('d', line_generator(data))
+</script>
