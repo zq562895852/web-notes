@@ -57,12 +57,12 @@ const compose = (...fns) => (...args) =>
  */
 
 // 拉平数组
-// function paArr(arr) {
-//   while (arr.some(Array.isArray)) {
-//     arr = [].concat(arr);
-//   }
-//   return arr;
-// }
+function paArr(arr) {
+  while (arr.some(Array.isArray)) {
+    arr = [].concat(...arr);
+  }
+  return arr;
+}
 
-// let arr = [[123, 4, 5], 9, [4, 5, 6]];
-// console.log(paArr(arr));
+let arr = [[123, 4, 5], 9, [4, 5, 6]];
+console.log(paArr(arr));
