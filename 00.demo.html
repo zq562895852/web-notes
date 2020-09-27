@@ -14,3 +14,21 @@
 
 </html>
 <script src="./24.前端监控.js"></script>
+<script>
+    export const recursion = function (data, current, type, result = []) {
+        if (!data) {
+            return;
+        }
+        for (var i in data) {
+            var item = data[i];
+            if (item.userId == current) {
+                item.select = type;
+                result.push(item)
+                break;
+            } else if (item.children && item.children.length > 0) {
+                recursion(item.children, current, type, result);
+            }
+        }
+        return result;
+    }
+</script>

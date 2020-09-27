@@ -85,7 +85,7 @@ setTimeout(() => {
 
 setTimeout(() => {
   console.log("timer1");
-  Promise.resolve().then(function() {
+  Promise.resolve().then(function () {
     console.log("promise1");
   });
 }, 0);
@@ -193,3 +193,295 @@ process.nextTick(() => {
 
   
  */
+
+/**
+ * require加载后悔缓存文件，大量使用会导致大量数据驻留在内存中，导致GC频发和内存泄露
+ * exports:
+ *    是module的一个对象，默认是空对象
+ *    require 一个模块，实际上市得到该模块的exports属性
+ *    exports.xx 导出具有多个属性的对象
+ *    module.exports = xx 导出一个对象
+ *
+ * process.nextTick方法允许你把一个回调放在下一次时间轮询队列的头上，这意味着可以用来延迟执行，结果是比 setTimeout 更有效率
+ *
+ *
+ * Buffer如果没有提供编码格式，文件操作以及很多网络操作就会将数据作为 Buffer 类型返回。
+ */
+
+const EventEmitter = require("events").EventEmitter;
+
+function complexOperations() {
+  const events = new EventEmitter();
+
+  process.nextTick(function () {
+    events.emit("success");
+  });
+
+  return events;
+}
+
+complexOperations().on("success", function () {
+  console.log("success!");
+});
+
+// 可写流 - 文字变色   可写的流可用于输出数据到底层 I/O:继承自 stream.Writable
+const stream = require("stream");
+
+class GreenStream extends stream.Writable {
+  constructor(options) {
+    super(options);
+  }
+
+  _write(chunk, encoding, cb) {
+    process.stdout.write(`\u001b[32m${chunk}\u001b[39m`);
+    cb();
+  }
+}
+
+process.stdin.pipe(new GreenStream());
+
+// 异步查找 文件，没看懂
+exports.find = function (nameRe, startPath, cb) {
+  // cb 可以传入 console.log，灵活
+  const results = [];
+  let asyncOps = 0; // 2
+
+  function finder(path) {
+    asyncOps++;
+    fs.readdir(path, function (er, files) {
+      if (er) {
+        return cb(er);
+      }
+
+      files.forEach(function (file) {
+        const fpath = join(path, file);
+
+        asyncOps++;
+        fs.stat(fpath, function (er, stats) {
+          if (er) {
+            return cb(er);
+          }
+
+          if (stats.isDirectory()) finder(fpath);
+
+          if (stats.isFile() && nameRe.test(file)) {
+            results.push(fpath);
+          }
+
+          asyncOps--;
+          if (asyncOps == 0) {
+            cb(null, results);
+          }
+        });
+      });
+
+      asyncOps--;
+      if (asyncOps == 0) {
+        cb(null, results);
+      }
+    });
+  }
+
+  finder(startPath);
+};
+
+const fs = require("fs");
+fs.watch("./watchdir", console.log); // 稳定且快
+fs.watchFile("./watchdir", console.log); // 跨平台
+
+// 获取本地ip
+function get_local_ip() {
+  const interfaces = require("os").networkInterfaces();
+  let IPAdress = "";
+  for (const devName in interfaces) {
+    const iface = interfaces[devName];
+    for (let i = 0; i < iface.length; i++) {
+      const alias = iface[i];
+      if (
+        alias.family === "IPv4" &&
+        alias.address !== "127.0.0.1" &&
+        !alias.internal
+      ) {
+        IPAdress = alias.address;
+      }
+    }
+  }
+  return IPAdress;
+}
+
+// NodeJS 使用 net 模块创建 TCP 连接和服务。
+const assert = require("assert");
+const net = require("net");
+let clients = 0;
+let expectedAssertions = 2;
+
+const server = net.createServer(function (client) {
+  clients++;
+  const clientId = clients;
+  console.log("Client connected:", clientId);
+
+  client.on("end", function () {
+    console.log("Client disconnected:", clientId);
+  });
+
+  client.write("Welcome client: " + clientId);
+  client.pipe(client);
+});
+
+server.listen(8000, function () {
+  console.log("Server started on port 8000");
+
+  runTest(1, function () {
+    runTest(2, function () {
+      console.log("Tests finished");
+      assert.equal(0, expectedAssertions);
+      server.close();
+    });
+  });
+});
+
+function runTest(expectedId, done) {
+  const client = net.connect(8000);
+
+  client.on("data", function (data) {
+    const expected = "Welcome client: " + expectedId;
+    assert.equal(data.toString(), expected);
+    expectedAssertions--;
+    client.end();
+  });
+
+  client.on("end", done);
+}
+
+// fork
+
+// fork 方法会开发一个 IPC 通道，不同的 Node 进程进行消息传送
+// 一个子进程消耗 30ms 启动时间和 10MB 内存
+// 子进程：process.on('message') 、process.send()
+// 父进程：child.on('message') 、child.send()
+// parent.js
+const cp = require("child_process");
+
+const child = cp.fork("./child", { silent: true });
+child.send("monkeys");
+child.on("message", function (message) {
+  console.log("got message from child", message, typeof message);
+});
+child.stdout.pipe(process.stdout);
+
+setTimeout(function () {
+  child.disconnect();
+}, 3000);
+
+// child.js
+process.on("message", function (message) {
+  console.log("got one", message);
+  process.send("no pizza");
+  process.send(1);
+  process.send({ my: "object" });
+  process.send(false);
+  process.send(null);
+});
+
+console.log(process);
+// 退出时杀死所有子进程
+// const spawn = require('child_process').spawn;
+// const children = [];
+
+// process.on('exit', function () {
+//   console.log('killing', children.length, 'child processes');
+//   children.forEach(function (child) {
+//     child.kill();
+//   });
+// });
+
+// children.push(spawn('/bin/sleep', ['10']));
+// children.push(spawn('/bin/sleep', ['10']));
+// children.push(spawn('/bin/sleep', ['10']));
+
+// setTimeout(function () { process.exit(0); }, 3000);
+
+/**
+ * Cluster 的理解
+
+解决 NodeJS 单进程无法充分利用多核 CPU 问题
+通过 master-cluster 模式可以使得应用更加健壮
+Cluster 底层是 child_process 模块，除了可以发送普通消息，还可以发送底层对象 TCP、UDP 等
+TCP 主进程发送到子进程，子进程能根据消息重建出 TCP 连接，Cluster 可以决定 fork 出合适的硬件资源的子进程数
+
+ */
+
+/**
+ * Node 线程
+
+Node 进程占用了 7 个线程
+Node 中最核心的是 v8 引擎，在 Node 启动后，会创建 v8 的实例，这个实例是多线程的
+
+主线程：编译、执行代码
+编译/优化线程：在主线程执行的时候，可以优化代码
+分析器线程：记录分析代码运行时间，为 Crankshaft 优化代码执行提供依据
+垃圾回收的几个线程
+
+JavaScript 的执行是单线程的，但 Javascript 的宿主环境，无论是 Node 还是浏览器都是多线程的
+
+ */
+
+/**
+  * 异步 IO
+      Node 中有一些 IO 操作（DNS，FS）和一些 CPU 密集计算（Zlib，Crypto）会启用 Node 的线程池
+      线程池默认大小为 4，可以手动更改线程池默认大小
+  */
+// 处理未捕获的异常
+process.on("uncaughtException", (error) => {
+  // 我刚收到一个从未被处理的错误
+  // 现在处理它，并决定是否需要重启应用
+  errorManagement.handler.handleError(error);
+  if (!errorManagement.handler.isTrustedError(error)) {
+    process.exit(1);
+  }
+});
+
+process.on("unhandledRejection", (reason, p) => {
+  // 我刚刚捕获了一个未处理的promise rejection,
+  // 因为我们已经有了对于未处理错误的后备的处理机制（见下面）
+  // 直接抛出，让它来处理
+  throw reason;
+});
+
+// 公钥私钥加解密
+const crypto = require("crypto");
+const fs = require("fs");
+
+const publicKey = fs
+  .readFileSync(`${__dirname}/rsa_public_key.pem`)
+  .toString("ascii");
+const privateKey = fs
+  .readFileSync(`${__dirname}/rsa_private_key.pem`)
+  .toString("ascii");
+console.log(publicKey);
+console.log(privateKey);
+const data = "Chenng";
+console.log("content: ", data);
+
+//公钥加密
+const encodeData = crypto
+  .publicEncrypt(publicKey, Buffer.from(data))
+  .toString("base64");
+console.log("encode: ", encodeData);
+
+//私钥解密
+const decodeData = crypto.privateDecrypt(
+  privateKey,
+  Buffer.from(encodeData, "base64")
+);
+console.log("decode: ", decodeData.toString());
+
+// node-schedule 定时任务
+const schedule = require("node-schedule");
+const axios = require("axios");
+
+schedule.scheduleJob("* 23 59 * *", function () {
+  axios.get("https://static.chenng.cn/api/dynamic_image/leetcode_problems");
+  axios.get("https://static.chenng.cn/api/dynamic_image/leetcode");
+  axios.get("https://static.chenng.cn/api/dynamic_image/codewars");
+});

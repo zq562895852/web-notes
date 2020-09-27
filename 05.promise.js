@@ -19,19 +19,19 @@ class Promise {
     // 存放失败的回调
     this.onRejectCallbacks = [];
 
-    let resolve = data => {
+    let resolve = (data) => {
       if (this.status === "pending") {
         this.status = "resolved";
         this.value = data;
-        this.onResolveCallbacks.forEach(fn => fn());
+        this.onResolveCallbacks.forEach((fn) => fn());
       }
     };
 
-    let reject = reason => {
+    let reject = (reason) => {
       if (this.status === "pending") {
         this.status = "rejected";
         this.reason = reason;
-        this.onRejectCallbacks.forEach(fn => fn());
+        this.onRejectCallbacks.forEach((fn) => fn());
       }
     };
 
@@ -62,3 +62,5 @@ class Promise {
     }
   }
 }
+
+let b = { [Symbol.toPrimitive]: ((i) => () => ++i)(0) };

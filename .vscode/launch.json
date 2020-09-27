@@ -1,0 +1,28 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.3.0",
+    "configurations": [{
+            "code-runner.executorMap": {
+                "javascript": "node",
+                "php": "C:\\php\\php.exe",
+                "python": "python",
+                "perl": "perl",
+                "ruby": "C:\\Ruby23-x64\\bin\\ruby.exe",
+                "go": "go run",
+                "html": "\"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\"",
+                "java": "cd $dir && javac $fileName && java $fileNameWithoutExt",
+                "c": "cd $dir && gcc $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt"
+            }
+        },
+        {
+            "type": "pwa-msedge",
+            "request": "launch",
+            "name": "Launch Chrome against localhost",
+            "url": "http://localhost:8080",
+            "webRoot": "${workspaceFolder}"
+        },
+    ],
+
+}
